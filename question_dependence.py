@@ -5,9 +5,35 @@ from scipy.stats import chisquare
 
 class QuestionDependence:
     """
-    Checks if there is any association between single/multiple choice questions in a survey.
+    Checks if there is any association between single/multiple choice
+    questions in a survey. Uses chi square test for independence.
 
-    It happens by calculating a chi square test for independence between categorical variables.
+    Parameters
+    ----------
+    path : str
+        Path to a csv file containing survey data. Columns represent
+        questions and each row specifies an answer. First row contains
+        the questions in textual form. A csv file exported directly from
+        Google Forms should work without any augmentation
+    target : int
+        Index of the question to be treated as a target. All questions
+        specified in single and multi will be tested against this one.
+        Target question has to be single choice. Indexing starts with 0
+    single : tuple or list of ints
+        List of questions indices to be treated as single choice
+        questions. Indexing starts with 0
+    multi : tuple or list of ints
+        List of questions indices to be treated as multiple choice
+        questions. Indexing starts with 0
+    multi_delimiter : str
+        Delimiter used in splitting multiple choice question answers
+        into single data points
+    min_count : int
+        Minimum value of each expected frequency count for the test to
+        be valid
+    significance_level : float
+        Threshold for p-value, below which the test's null hypothesis
+        will be rejected, i.e. the questions are related
 
     """
 
@@ -92,8 +118,9 @@ class QuestionDependence:
             self.stats['invalid'].append(i_question)
             return
 
-        # Scipy's chisquare function uses flattened data and is unable to properly infer the number
-        # of degrees of freedom. We use delta degrees of freedom (ddof) to adjust the value.
+        # Scipy's chisquare function uses flattened data and is unable to
+        # properly infer the number of degrees of freedom. We use delta
+        # degrees of freedom (ddof) to adjust the value.
         # dof = k - 1 - ddof
         # k = r * c
         # ddof = r * c - 1 - (r - 1) * (c - 1)
@@ -115,6 +142,13 @@ class QuestionDependence:
         print('\f', end='')
 
     def convert_multi_to_single(self, column):
+        """
+        In case of multiple choice questions each row is made of a list
+        of answers. In order to be able to analyze this data we convert
+        it into separate data points, e.g.
+        ([1, 2, 3], 'Yes') -> (1, 'Yes'), (2, 'Yes'), (3, 'Yes')
+
+        """
         df = pd.DataFrame()
 
         for row_data, row_target in zip(column, self.target_column):
